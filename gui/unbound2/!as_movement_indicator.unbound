@@ -1,0 +1,139 @@
+#
+# Movement indicator by AutoSpy
+#
+
+# Settings
+(def constant MOD_MI_SETTINGS {
+	# radius
+	radius: 5,
+	# colors for movement type [stop, forward, backward]
+	movementColors: [0xFF5050, 0xFFFF00, 0x50FF50, 0xAA50FF],
+	# movement indicator alpha
+	movementIndicatorAlpha: 0.9,
+	# frequency = 20/cycle
+	cycle: 5
+})
+
+
+# orig gui\unbound2\pc\battle\markers\markers_elements
+(def element PriorityItem (_entityId:number) layout=true
+	(scope
+		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
+		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, markerEntity.avatar.id)")
+		
+		(macro GET_MARKER_ENTITY_COMPONENT 'target')
+		(var targetFlags:number = "targetComponent ? targetComponent.flags : 0" (event "targetComponent.evChanged") (event "targetComponent.evFlagsChanged"))
+
+		(var isAirDefense:bool = "targetFlags & (1 << SC.Ships.SHIP_WEAPON_TYPES.AIRDEFENCE)")
+		(var isATBA:bool = "targetFlags & (1 << SC.Ships.SHIP_WEAPON_TYPES.ATBA)")
+		(var isPriorityTarget:bool = "isAirDefense || isATBA")
+		(var priorityIcon:str = "isATBA ? 'atba' : 'aa'")
+
+		(var isTargetLocked:bool = "(targetFlags & LOCKABLE_WEAPONS) > 0")
+		(var targetIsAlive:bool = "markerEntity && markerEntity.hasComponent(CC.health) && markerEntity.health.isAlive" (event "markerEntity.health.evIsAliveChanged"))
+		(var enabled:bool = "isTargetLocked && targetIsAlive")
+
+		(var targetMapPosition:gfx = "markerEntity.mapPosition")
+		(var targetYaw:number = "radToGrad(targetMapPosition.yaw)" (event "evEnterFrame"))
+
+		(var targetWorldVisible:bool = "markerEntity && markerEntity.hasComponent(CC.visibility) && markerEntity.visibility.visible" (event "markerEntity.visibility.evChanged"))
+		(var targetMapVisible:bool = "markerEntity && markerEntity.hasComponent(CC.visibility) && markerEntity.visibility.mapVisible" (event "markerEntity.visibility.evChanged"))
+		(var targetVisible:bool = "targetWorldVisible && targetMapVisible" (event "markerEntity.visibility.evChanged"))
+
+		(var targetPosition:gfx = "targetMapPosition.position")
+		(var targetPosX:number = "targetPosition.x" (event "evEnterFrame"))
+		(var targetPosY:number = "targetPosition.y" (event "evEnterFrame"))
+		
+		# Course calculation 0-stop, 1-slowly forward, 2-forward, 3-backward
+		(event evCourseUpdate)
+		(var count:number = 0)
+		(bind count "$event.count" init=false watch=false (event "evCourseUpdate"))
+		(var posXCur:number = "round(targetPosX * 100000)" watch=false)
+		(bind posXCur "$event.posXCur" init=false watch=false (event "evCourseUpdate"))
+        (var posYCur:number = "round(targetPosY * 100000)" watch=false)
+		(bind posYCur "$event.posYCur" init=false watch=false (event "evCourseUpdate"))
+
+		(var timerEntity:gfx = "$datahub.getSingleEntity(CC.timer)")
+		(dispatch evCourseUpdate args = "{posXCur: round(targetPosX * 100000), posYCur: round(targetPosY * 100000), count: count+1}" (event "timerEntity.timer.evFrequent"))
+
+		(event evCourseChanged)
+		(var posXtmp:number = "posXCur" watch=false)
+		(bind posXtmp "$event.posXtmp" init=false watch=false (event "evCourseChanged"))
+
+		(var posYtmp:number = "posYCur" watch=false)
+		(bind posYtmp "$event.posYtmp" init=false watch=false (event "evCourseChanged"))
+		
+		(var posXPrev:number = "posXtmp" watch=false)
+		(bind posXPrev "$event.posXPrev" init=false watch=false (event "evCourseChanged"))
+		(var posXDiff:number = "posXCur - posXPrev")
+
+		(var posYPrev:number = "posYtmp" watch=false)
+		(bind posYPrev "$event.posYPrev" init=false watch=false (event "evCourseChanged"))
+		(var posYDiff:number = "posYCur - posYPrev")
+
+		(var sqrDistDiff:number = "pow(posXDiff, 2) + pow(posYDiff, 2)")
+
+		(var currentYawAngle:number = "abs(radToGrad(atan2(posXDiff, -posYDiff)) - round(targetYaw))")
+
+		(var course:number=-1)
+		(var targetMaxSpeed:number = "entityTTX.mods_ShipParamsInBattle.shipTTX.mobility.speed.value")
+		(bind course "$event.course" init=false watch=false (event "evCourseChanged"))
+
+		(var targetVisiblePrev:bool=false watch=false)
+		(bind targetVisiblePrev "$event.targetVisiblePrev" init=false watch=false (event "evCourseChanged"))
+
+        (dispatch evCourseChanged args = "{course:(count%MOD_MI_SETTINGS.cycle!=0)? course : !(targetVisiblePrev && targetVisible)
+                                                ?	-1
+												:	(sqrDistDiff <= targetMaxSpeed*4)
+													?	0
+                                                    :	(sqrDistDiff >= 1000000)
+                                                            ?	-1
+                                                            :	((currentYawAngle <= 50) || (currentYawAngle >= 310))
+																? 	((sqrDistDiff <= targetMaxSpeed*6)? 0 : (sqrDistDiff <= targetMaxSpeed*60)? 1 : 2)
+																:((currentYawAngle >= 130) && (currentYawAngle <= 230))
+																	? 3
+																	:	-1,
+										targetVisiblePrev: targetVisible, 
+										posXPrev: (count%MOD_MI_SETTINGS.cycle==0)? posXtmp: posXPrev, posYPrev: (count%MOD_MI_SETTINGS.cycle==0)? posYtmp: posYPrev,
+										posXtmp: (count%MOD_MI_SETTINGS.cycle==0)? posXCur: posXtmp, posYtmp: (count%MOD_MI_SETTINGS.cycle==0)? posYCur: posYtmp}"
+										dir=0 (event "evCourseUpdate")
+		)
+		# # End of Course calculation
+
+		(var size:number = "MOD_MI_SETTINGS.radius * 2")
+	)
+
+	(style (align = "center") (width=28px))
+
+	(block
+		(bind visible "isPriorityTarget")
+
+		(style
+			(width=28px) (height=28px)
+			(bind backgroundImage "'url:../battle_hud/markers/priority/' + priorityIcon + '_priority_attack.png'")
+		)
+	)
+
+	(block
+		(bind visible "enabled && (course > -1)")
+
+		(style
+			(align = "center|middle")
+			(width = "size") (height = "size")
+			(marginTop=2px) (marginBottom=100%)
+		)
+
+		(block
+			(controller $Sector
+				(arc=360)
+				(radius = "MOD_MI_SETTINGS.radius")
+				(bind colors "[MOD_MI_SETTINGS.movementColors[course]]")
+				(lineColor=0x33333333)
+				(lineThickness=1)
+				(lineAlpha = "MOD_MI_SETTINGS.movementIndicatorAlpha")
+				(alphas = "[MOD_MI_SETTINGS.movementIndicatorAlpha]")
+				(ratios=[255])
+			)
+		)
+	)
+)
