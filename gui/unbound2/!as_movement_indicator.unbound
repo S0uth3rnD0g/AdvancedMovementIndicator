@@ -16,10 +16,9 @@
 
 
 # orig gui\unbound2\pc\battle\markers\markers_elements
-(def element PriorityItem (_entityId:number) layout=true
+(def element PriorityItem (_markerEntity:gfx) layout=true
 	(scope
-		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
-		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, markerEntity.avatar.id)")
+		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, _markerEntity.avatar.id)")
 		
 		(macro GET_MARKER_ENTITY_COMPONENT 'target')
 		(var targetFlags:number = "targetComponent ? targetComponent.flags : 0" (event "targetComponent.evChanged") (event "targetComponent.evFlagsChanged"))
@@ -30,15 +29,15 @@
 		(var priorityIcon:str = "isATBA ? 'atba' : 'aa'")
 
 		(var isTargetLocked:bool = "(targetFlags & LOCKABLE_WEAPONS) > 0")
-		(var targetIsAlive:bool = "markerEntity && markerEntity.hasComponent(CC.health) && markerEntity.health.isAlive" (event "markerEntity.health.evIsAliveChanged"))
+		(var targetIsAlive:bool = "_markerEntity && _markerEntity.hasComponent(CC.health) && _markerEntity.health.isAlive" (event "_markerEntity.health.evIsAliveChanged"))
 		(var enabled:bool = "isTargetLocked && targetIsAlive")
 
-		(var targetMapPosition:gfx = "markerEntity.mapPosition")
+		(var targetMapPosition:gfx = "_markerEntity.mapPosition")
 		(var targetYaw:number = "radToGrad(targetMapPosition.yaw)" (event "evEnterFrame"))
 
-		(var targetWorldVisible:bool = "markerEntity && markerEntity.hasComponent(CC.visibility) && markerEntity.visibility.visible" (event "markerEntity.visibility.evChanged"))
-		(var targetMapVisible:bool = "markerEntity && markerEntity.hasComponent(CC.visibility) && markerEntity.visibility.mapVisible" (event "markerEntity.visibility.evChanged"))
-		(var targetVisible:bool = "targetWorldVisible && targetMapVisible" (event "markerEntity.visibility.evChanged"))
+		(var targetWorldVisible:bool = "_markerEntity && _markerEntity.hasComponent(CC.visibility) && _markerEntity.visibility.visible" (event "_markerEntity.visibility.evChanged"))
+		(var targetMapVisible:bool = "_markerEntity && _markerEntity.hasComponent(CC.visibility) && _markerEntity.visibility.mapVisible" (event "_markerEntity.visibility.evChanged"))
+		(var targetVisible:bool = "targetWorldVisible && targetMapVisible" (event "_markerEntity.visibility.evChanged"))
 
 		(var targetPosition:gfx = "targetMapPosition.position")
 		(var targetPosX:number = "targetPosition.x" (event "evEnterFrame"))
