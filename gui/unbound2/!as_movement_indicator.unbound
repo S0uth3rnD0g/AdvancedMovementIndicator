@@ -11,7 +11,7 @@
 	# movement indicator alpha
 	movementIndicatorAlpha: 0.9,
 	# frequency = 20/cycle
-	cycle: 5
+	cycle: 4
 })
 
 
@@ -43,58 +43,52 @@
 		(var targetPosX:number = "targetPosition.x" (event "evEnterFrame"))
 		(var targetPosY:number = "targetPosition.y" (event "evEnterFrame"))
 		
+		(var timerEntity:gfx = "$datahub.getSingleEntity(CC.timer)")
+		(var incrementCount:number = "0" watch=false)
+		(bind incrementCount "incrementCount+1" init=false watch=false (event "timerEntity.timer.evFrequent"))
+		
 		# Course calculation 0-stop, 1-slowly forward, 2-forward, 3-backward
 		(event evCourseUpdate)
-		(var count:number = 0)
-		(bind count "$event.count" init=false watch=false (event "evCourseUpdate"))
 		(var posXCur:number = "round(targetPosX * 100000)" watch=false)
 		(bind posXCur "$event.posXCur" init=false watch=false (event "evCourseUpdate"))
         (var posYCur:number = "round(targetPosY * 100000)" watch=false)
 		(bind posYCur "$event.posYCur" init=false watch=false (event "evCourseUpdate"))
 
-		(var timerEntity:gfx = "$datahub.getSingleEntity(CC.timer)")
-		(dispatch evCourseUpdate args = "{posXCur: round(targetPosX * 100000), posYCur: round(targetPosY * 100000), count: count+1}" (event "timerEntity.timer.evFrequent"))
+		(dispatch evCourseUpdate args = "{posXCur: round(targetPosX * 100000), posYCur: round(targetPosY * 100000)}" (bind trigger "floor(incrementCount / 4)"))
 
 		(event evCourseChanged)
-		(var posXtmp:number = "posXCur" watch=false)
-		(bind posXtmp "$event.posXtmp" init=false watch=false (event "evCourseChanged"))
-
-		(var posYtmp:number = "posYCur" watch=false)
-		(bind posYtmp "$event.posYtmp" init=false watch=false (event "evCourseChanged"))
-		
-		(var posXPrev:number = "posXtmp" watch=false)
+		(var posXPrev:number = "posXCur" watch=false)
 		(bind posXPrev "$event.posXPrev" init=false watch=false (event "evCourseChanged"))
 		(var posXDiff:number = "posXCur - posXPrev")
 
-		(var posYPrev:number = "posYtmp" watch=false)
+		(var posYPrev:number = "posYCur" watch=false)
 		(bind posYPrev "$event.posYPrev" init=false watch=false (event "evCourseChanged"))
 		(var posYDiff:number = "posYCur - posYPrev")
 
 		(var sqrDistDiff:number = "pow(posXDiff, 2) + pow(posYDiff, 2)")
 
 		(var currentYawAngle:number = "abs(radToGrad(atan2(posXDiff, -posYDiff)) - round(targetYaw))")
-
-		(var course:number=-1)
+		
 		(var targetMaxSpeed:number = "entityTTX.mods_ShipParamsInBattle.shipTTX.mobility.speed.value")
+		
+		(var course:number=-1)
 		(bind course "$event.course" init=false watch=false (event "evCourseChanged"))
 
 		(var targetVisiblePrev:bool=false watch=false)
 		(bind targetVisiblePrev "$event.targetVisiblePrev" init=false watch=false (event "evCourseChanged"))
 
-        (dispatch evCourseChanged args = "{course:(count%MOD_MI_SETTINGS.cycle!=0)? course : !(targetVisiblePrev && targetVisible)
+        (dispatch evCourseChanged args = "{course: !(targetVisiblePrev && targetVisible)
                                                 ?	-1
-												:	(sqrDistDiff <= targetMaxSpeed*4)
+												:	(sqrDistDiff <= targetMaxSpeed*1.2)
 													?	0
                                                     :	(sqrDistDiff >= 1000000)
-                                                            ?	-1
-                                                            :	((currentYawAngle <= 50) || (currentYawAngle >= 310))
-																? 	((sqrDistDiff <= targetMaxSpeed*6)? 0 : (sqrDistDiff <= targetMaxSpeed*60)? 1 : 2)
-																:((currentYawAngle >= 130) && (currentYawAngle <= 230))
-																	? 3
-																	:	-1,
-										targetVisiblePrev: targetVisible, 
-										posXPrev: (count%MOD_MI_SETTINGS.cycle==0)? posXtmp: posXPrev, posYPrev: (count%MOD_MI_SETTINGS.cycle==0)? posYtmp: posYPrev,
-										posXtmp: (count%MOD_MI_SETTINGS.cycle==0)? posXCur: posXtmp, posYtmp: (count%MOD_MI_SETTINGS.cycle==0)? posYCur: posYtmp}"
+                                                        ?	-1
+                                                        :	((currentYawAngle <= 50) || (currentYawAngle >= 310))
+															? 	((sqrDistDiff <= targetMaxSpeed*2)? 0 : (sqrDistDiff <= targetMaxSpeed*25)? 1 : 2)
+															:((currentYawAngle >= 130) && (currentYawAngle <= 230))
+																?	3
+																:	-1,
+										targetVisiblePrev: targetVisible, posXPrev: posXCur, posYPrev: posYCur}"
 										dir=0 (event "evCourseUpdate")
 		)
 		# # End of Course calculation
