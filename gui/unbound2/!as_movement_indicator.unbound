@@ -17,6 +17,7 @@
 
 # orig gui\unbound2\pc\battle\markers\markers_elements
 (def element PriorityItem (_markerEntity:gfx) layout=true
+	(bindcall externalCall 'inputMapping.onAction' "['createParamsForAllShipsInBattle', {}]" on='addedToStage')
 	(scope
 		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, _markerEntity.avatar.id)")
 		
