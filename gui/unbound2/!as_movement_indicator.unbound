@@ -6,7 +6,7 @@
 (def constant MOD_MI_SETTINGS {
 	# radius
 	radius: 5,
-	# colors for movement type [stop, forward, backward]
+	# colors for movement type [stop, slowly forward, forward, backward]
 	movementColors: [0xFF5050, 0xFFFF00, 0x50FF50, 0xAA50FF],
 	# movement indicator alpha
 	movementIndicatorAlpha: 0.9,
@@ -19,7 +19,8 @@
 (def element PriorityItem (_markerEntity:gfx) layout=true
 	(bindcall externalCall 'inputMapping.onAction' "['createParamsForAllShipsInBattle', {}]" on='addedToStage')
 	(scope
-		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, _markerEntity.avatar.id)")
+		(var ttxCol:gfx = "$datahub.getCollection(CC.mods_ShipParamsInBattle)")
+		(var entityTTX:gfx = "$datahub.getPrimaryEntity(CC.mods_ShipParamsInBattle, _markerEntity.avatar.id)" (event "ttxCol.evAdded"))
 		
 		(macro GET_MARKER_ENTITY_COMPONENT 'target')
 		(var targetFlags:number = "targetComponent ? targetComponent.flags : 0" (event "targetComponent.evChanged") (event "targetComponent.evFlagsChanged"))
