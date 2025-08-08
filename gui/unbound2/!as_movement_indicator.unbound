@@ -71,7 +71,7 @@
 
 		(var currentYawAngle:number = "abs(radToGrad(atan2(posXDiff, -posYDiff)) - round(targetYaw))")
 		
-		(var targetMaxSpeed:number = "entityTTX.mods_ShipParamsInBattle.shipTTX.mobility.speed.value")
+		(var targetMaxSpeed:number = "entityTTX ? entityTTX.mods_ShipParamsInBattle.shipTTX.mobility.speed.value : 30")
 		
 		(var course:number=-1)
 		(bind course "$event.course" init=false watch=false (event "evCourseChanged"))
