@@ -24,11 +24,7 @@
 		
 		(macro GET_MARKER_ENTITY_COMPONENT 'target')
 		(var targetFlags:number = "targetComponent ? targetComponent.flags : 0" (event "targetComponent.evChanged") (event "targetComponent.evFlagsChanged"))
-
-		(var isAirDefense:bool = "targetFlags & (1 << SC.Ships.SHIP_WEAPON_TYPES.AIRDEFENCE)")
-		(var isATBA:bool = "targetFlags & (1 << SC.Ships.SHIP_WEAPON_TYPES.ATBA)")
-		(var isPriorityTarget:bool = "isAirDefense || isATBA")
-		(var priorityIcon:str = "isATBA ? 'atba' : 'aa'")
+		(var isATBA:bool = "targetComponent ? targetComponent.atbaPriorityTarget : false" (event "targetComponent.evChanged") (event "targetComponent.evAtbaPriorityTargetChanged"))
 
 		(var isTargetLocked:bool = "(targetFlags & LOCKABLE_WEAPONS) > 0")
 		(var targetIsAlive:bool = "_markerEntity && _markerEntity.hasComponent(CC.health) && _markerEntity.health.isAlive" (event "_markerEntity.health.evIsAliveChanged"))
@@ -101,11 +97,11 @@
 	(style (align = "center") (width=28px))
 
 	(block
-		(bind visible "isPriorityTarget")
+		(bind visible "isATBA")
 
 		(style
 			(width=28px) (height=28px)
-			(bind backgroundImage "'url:../battle_hud/markers/priority/' + priorityIcon + '_priority_attack.png'")
+			(bind backgroundImage "'url:../battle_hud/markers/priority/atba_priority_attack.png'")
 		)
 	)
 
